@@ -18,12 +18,12 @@ contract RCPlayer is RCRoles {
     }
 
     modifier isTransferOpen {
-        require(_transferPaused, "Transfer down");
+        require(_transferSwitch, "Transfer down");
         _;
     }
 
     modifier isTransferDown {
-        require(_transferPaused, "Transfer open");
+        require(!_transferSwitch, "Transfer open");
         _;
     }
 

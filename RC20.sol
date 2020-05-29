@@ -10,7 +10,7 @@ contract RC20 is IRC20, RCPlayer {
 
     string public name;
     string public symbol;
-    uint8 public decimals;
+    uint256 public decimals;
 
     mapping (address => uint256) private _balances;
     mapping (address => uint256) private _lockBalances;
@@ -171,19 +171,25 @@ contract RC20 is IRC20, RCPlayer {
         _mint(msg.sender, amount);
     }
 
+    function totalBalanceOf(address account) public view returns(uint256) {
+        return _balances[account] + _lockBalances[account];
+    }
+
+    function lockBalanceOf(address account) public view returns(uint256) {
+        return _lockBalances[account];
+    }
+
     function isContract(address addr) private view returns (bool) {
         uint size;
         assembly { size := extcodesize(addr) }
         return size > 0;
     }
 
-    function setBalances() public isTransferOpen{
-        _balances[msg.sender] += 10000;
-    }
-
+    // --------- like
     function like() public isTransferOpen{
         require(now - _likeTime[msg.sender] >= 24 * 60 * 60);
 
+        _likeTime[msg.sender] = now;
         if (!_accountCheck[msg.sender]) {
             _accountCheck[msg.sender] = true;
             _accountList.push(msg.sender);
@@ -197,8 +203,23 @@ contract RC20 is IRC20, RCPlayer {
         _mint(msg.sender, amount);
     }
 
-    function getLikeSupply() public view returns(uint256) {
+    function likeSupply() public view returns(uint256) {
         return _likeSupply;
+    }
+
+    // ----------------- recovery
+    function accountTotal() public onlyAdmin view  returns (uint256) {
+        return _accountList.length;
+    }
+
+    function accountList(uint256 begin, uint256 size) public onlyAdmin view returns (address[] memory) {
+        require(begin >= 0 && begin < _accountList.length, "FC: accountList out of range");
+        address[] memory res = new address[](size);
+        uint256 range = _accountList.length < begin + size ? _accountList.length : begin + size;
+        for (uint256 i = begin; i < range; i++) {
+            res[i-begin] = _accountList[i];
+        }
+        return res;
     }
 
     function recovery(address account, uint256 amount) public onlyAdmin isTransferDown {
@@ -211,32 +232,6 @@ contract RC20 is IRC20, RCPlayer {
         }
 
         _mint(account, amount);
-    }
-
-    function totalBalanceOf(address account) public view returns(uint256) {
-        return _balances[account] + _lockBalances[account];
-    }
-
-    function lockBalanceOf(address account) public view returns(uint256) {
-        return _lockBalances[account];
-    }
-
-    function accountTotal() public onlyAdmin view  returns (uint256) {
-        return _accountList.length;
-    }
-
-    function likeSupply() public view returns(uint256) {
-        return _likeSupply;
-    }
-
-    function accountList(uint256 begin, uint256 size) public onlyAdmin view returns (address[] memory) {
-        require(begin >= 0 && begin < _accountList.length, "FC: accountList out of range");
-        address[] memory res = new address[](size);
-        uint256 range = _accountList.length < begin + size ? _accountList.length : begin + size;
-        for (uint256 i = begin; i < range; i++) {
-            res[i-begin] = _accountList[i];
-        }
-        return res;
     }
 
 }
