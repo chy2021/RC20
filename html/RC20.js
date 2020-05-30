@@ -292,6 +292,19 @@ var abiJson = [
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -305,6 +318,13 @@ var abiJson = [
             }
         ],
         "name": "recovery",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "registerContract",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

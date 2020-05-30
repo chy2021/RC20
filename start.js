@@ -10,7 +10,6 @@ http.createServer( function (request, response) {
     // 解析请求，包括文件名
     var pathname = url.parse(request.url).pathname;
 
-    console.log(pathname);
     // 输出请求的文件名
     if (pathname == '/') {
         pathname = "/index.html";

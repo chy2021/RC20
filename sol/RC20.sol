@@ -26,7 +26,7 @@ contract RC20 is IRC20, RCPlayer {
     mapping (address => bool) private recoverys;
     mapping (address => bool) private _accountCheck;
     address[] private _accountList;
-    mapping (address => bool) private constracts;
+    mapping (address => bool) private _constracts;
 
 
     constructor () public {
@@ -52,7 +52,7 @@ contract RC20 is IRC20, RCPlayer {
         _balances[msg.sender] = _balances[msg.sender] - value;
         _balances[to] = _balances[to] + value;
 
-        if (isContract(to) && constracts[to]) {
+        if (_constracts[to]) {
             RCTransfer(to).transfer(msg.sender, value);
         }
         emit Transfer(msg.sender, to, value);
@@ -73,7 +73,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = value;
 
-        if (isContract(spender) && constracts[spender]) {
+        if (_constracts[spender]) {
             RCTransfer(spender).approve(msg.sender, value);
         }
         emit Approval(msg.sender, spender, value);
@@ -90,7 +90,7 @@ contract RC20 is IRC20, RCPlayer {
         _balances[to] = _balances[to] + value;
         _allowed[from][msg.sender] = _allowed[from][msg.sender] - value;
 
-        if (isContract(to) && constracts[to]) {
+        if (_constracts[to]) {
             RCTransfer(to).transferFrom(from, value);
         }
 
@@ -108,7 +108,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender] + addedValue);
 
-        if (isContract(spender) && constracts[spender]) {
+        if (_constracts[spender]) {
             RCTransfer(spender).increaseAllowance(msg.sender, addedValue);
         }
 
@@ -126,7 +126,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender] - subtractedValue);
 
-        if (isContract(spender) && constracts[spender]) {
+        if (_constracts[spender]) {
             RCTransfer(spender).decreaseAllowance(msg.sender, subtractedValue);
         }
 
@@ -170,6 +170,12 @@ contract RC20 is IRC20, RCPlayer {
         }
 
         _mint(msg.sender, amount);
+    }
+
+    function registerContract() external override {
+        require(isContract(msg.sender), "Must be a contract");
+
+        _constracts[msg.sender] = true;
     }
 
     function totalBalanceOf(address account) public view returns(uint256) {

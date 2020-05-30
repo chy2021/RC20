@@ -32,7 +32,7 @@
         function buildContract() {
             contract = confluxJS.Contract({
                 abi: abiJson,
-                address: "0x8bcec40739a1205ff473b36135bde20ac5d3e78f",
+                address: "0x8e9031ea2e899a1e062bd8cd136bc033dd622ae6",
             });
         }
 
@@ -41,22 +41,82 @@
                 .sendTransaction({ from: accounts[0] })
                 .confirmed();
         }
-        async function getBalances() {
+        async function totalBalanceOf() {
             let abc = await contract.totalBalanceOf(accounts[0]);
             console.log(abc.toString());
         }
-        async function open111() {
+        async function balanceOf() {
+            let abc = await contract.balanceOf(accounts[0]);
+            console.log(abc.toString());
+        }
+        async function lockBalanceOf() {
+            let abc = await contract.lockBalanceOf(accounts[0]);
+            console.log(abc.toString());
+        }
+        async function totalSupply() {
+            let abc = await contract.totalSupply();
+            console.log(abc.toString());
+        }
+        async function likeSupply() {
+            let abc = await contract.likeSupply();
+            console.log(abc.toString());
+        }
+        async function openRC() {
             await contract.transferOpen()
                 .sendTransaction({ from: accounts[0] })
                 .confirmed();
+        }
+        async function downRC() {
+            await contract.transferDown()
+                .sendTransaction({ from: accounts[0] })
+                .confirmed();
+        }
+        async function backupsRC() {
+            let count = await contract.accountTotal();
+            let size = count > 200 ? 200 : count;
+            let accountJsonList = [];
+            for (let i = 0; i < count; i = (i + 1) * size) {
+                let accounts = await contract.accountList(i, size);
+                for (let j = 0; j < accounts.length; j ++) {
+                    let amount = await contract.totalBalanceOf(accounts[j]);
+                    let accountJson = {};
+                    accountJson.address = accounts[j];
+                    accountJson.amount = amount;
+                    accountJsonList.push(accountJson);
+                }
+            }
+
+            console.log("备份结束");
+            console.log(JSON.stringify(accountJsonList));
+            window.localStorage.accountJsonListStr = JSON.stringify(accountJsonList);
+        }
+        async function recoveryRC() {
+            let accountJsonList = JSON.parse(window.localStorage.accountJsonListStr);
+            for (let i = 0; i < accountJsonList.length; i++) {
+
+                await contract.like()
+                    .sendTransaction({ from: accounts[0] })
+                    .confirmed();
+            }
         }
     </script>
 </head>
 <body>
 
+<button onclick="openRC()">打开</button>
+<button onclick="downRC()">关闭</button>
+<button onclick="backupsRC()">备份数据</button>
+<button onclick="recoveryRC()">恢复数据</button>
+
 <button onclick="like()">点赞</button>
-<button onclick="getBalances()">账户</button>
-<button onclick="open111()">打开</button>
+<button onclick="likeSupply()">likeSupply</button>
+<button onclick="totalBalanceOf()">totalBalanceOf</button>
+<button onclick="lockBalanceOf()">lockBalanceOf</button>
+<button onclick="balanceOf()">balanceOf</button>
+<button onclick="totalSupply()">totalSupply</button>
+
+<button onclick="totalSupply()">totalSupply</button>
+
 <script>
     main();
 </script>
