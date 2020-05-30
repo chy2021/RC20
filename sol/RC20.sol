@@ -26,6 +26,7 @@ contract RC20 is IRC20, RCPlayer {
     mapping (address => bool) private recoverys;
     mapping (address => bool) private _accountCheck;
     address[] private _accountList;
+    mapping (address => bool) private constracts;
 
 
     constructor () public {
@@ -51,7 +52,7 @@ contract RC20 is IRC20, RCPlayer {
         _balances[msg.sender] = _balances[msg.sender] - value;
         _balances[to] = _balances[to] + value;
 
-        if (isContract(to)) {
+        if (isContract(to) && constracts[to]) {
             RCTransfer(to).transfer(msg.sender, value);
         }
         emit Transfer(msg.sender, to, value);
@@ -72,7 +73,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = value;
 
-        if (isContract(spender)) {
+        if (isContract(spender) && constracts[spender]) {
             RCTransfer(spender).approve(msg.sender, value);
         }
         emit Approval(msg.sender, spender, value);
@@ -89,7 +90,7 @@ contract RC20 is IRC20, RCPlayer {
         _balances[to] = _balances[to] + value;
         _allowed[from][msg.sender] = _allowed[from][msg.sender] - value;
 
-        if (isContract(to)) {
+        if (isContract(to) && constracts[to]) {
             RCTransfer(to).transferFrom(from, value);
         }
 
@@ -107,7 +108,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender] + addedValue);
 
-        if (isContract(spender)) {
+        if (isContract(spender) && constracts[spender]) {
             RCTransfer(spender).increaseAllowance(msg.sender, addedValue);
         }
 
@@ -125,7 +126,7 @@ contract RC20 is IRC20, RCPlayer {
 
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender] - subtractedValue);
 
-        if (isContract(spender)) {
+        if (isContract(spender) && constracts[spender]) {
             RCTransfer(spender).decreaseAllowance(msg.sender, subtractedValue);
         }
 
@@ -208,11 +209,11 @@ contract RC20 is IRC20, RCPlayer {
     }
 
     // ----------------- recovery
-    function accountTotal() public onlyAdmin view  returns (uint256) {
+    function accountTotal() public view  returns (uint256) {
         return _accountList.length;
     }
 
-    function accountList(uint256 begin, uint256 size) public onlyAdmin view returns (address[] memory) {
+    function accountList(uint256 begin, uint256 size) public view returns (address[] memory) {
         require(begin >= 0 && begin < _accountList.length, "FC: accountList out of range");
         address[] memory res = new address[](size);
         uint256 range = _accountList.length < begin + size ? _accountList.length : begin + size;

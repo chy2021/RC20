@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RC20 管理</title>
+
+    <script type="text/javascript" src="./RC20.js"></script>
+    <script>
+        function main() {
+            if (!checkConflux()) {
+                return;
+            }
+            buildContract();
+        }
+        let accounts;
+        let contract;
+        async function checkConflux() {
+            if (window.conflux === 'undefined') {
+                if(confirm('检测到您的浏览器中并未安装conflux钱包插件，点击确定前往下载。\n\n 注：如果没有跳转看下是不是被浏览器拦截了')){
+                    window.open("https://github.com/Conflux-Chain/conflux-portal/releases")
+                }
+
+                var body = document.getElementById("body");
+                body.innerHTML = "本网址需要安装conflux钱包插件， 请 <a href='https://github.com/Conflux-Chain/conflux-portal/releases'>前往下载</a> conflux钱包插件";
+                return false;
+            }
+
+            accounts = await conflux.enable();
+            return true;
+        }
+
+        function buildContract() {
+            contract = confluxJS.Contract({
+                abi: abiJson,
+                address: "0x8bcec40739a1205ff473b36135bde20ac5d3e78f",
+            });
+        }
+
+        async function like() {
+            await contract.like()
+                .sendTransaction({ from: accounts[0] })
+                .confirmed();
+        }
+        async function getBalances() {
+            let abc = await contract.totalBalanceOf(accounts[0]);
+            console.log(abc.toString());
+        }
+        async function open111() {
+            await contract.transferOpen()
+                .sendTransaction({ from: accounts[0] })
+                .confirmed();
+        }
+    </script>
+</head>
+<body>
+
+<button onclick="like()">点赞</button>
+<button onclick="getBalances()">账户</button>
+<button onclick="open111()">打开</button>
+<script>
+    main();
+</script>
+</body>
+</html>
