@@ -61,6 +61,12 @@
             let abc = await contract.likeSupply();
             console.log(abc.toString());
         }
+        async function transfer() {
+            let address = document.getElementById('address').value;
+            await contract.transfer(address, 10)
+                .sendTransaction({ from: accounts[0] })
+                .confirmed();
+        }
         async function openRC() {
             await contract.transferOpen()
                 .sendTransaction({ from: accounts[0] })
@@ -115,7 +121,9 @@
 <button onclick="balanceOf()">balanceOf</button>
 <button onclick="totalSupply()">totalSupply</button>
 
-<button onclick="totalSupply()">totalSupply</button>
+<br/>
+<button onclick="transfer()">transfer</button>
+<input type="text" id="address"/>
 
 <script>
     main();

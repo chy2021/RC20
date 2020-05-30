@@ -13,7 +13,7 @@ abstract contract RCTransfer {
 
     function decreaseAllowance(address from, uint256 subtractedValue) external virtual;
 
-    function registerFC(IRC20 tarAddress) public {
+    function registerRC(IRC20 tarAddress) public {
         tarAddress.registerContract();
     }
 }
