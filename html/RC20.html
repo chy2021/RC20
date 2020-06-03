@@ -32,7 +32,7 @@
         function buildContract() {
             contract = confluxJS.Contract({
                 abi: abiJson,
-                address: "0x8e9031ea2e899a1e062bd8cd136bc033dd622ae6",
+                address: "0x80a2f68221bb5a381995b513e640de563fed93bb",
             });
         }
 
@@ -77,6 +77,11 @@
                 .sendTransaction({ from: accounts[0] })
                 .confirmed();
         }
+        async function receive1() {
+            await contract.receive1()
+                .sendTransaction({ from: accounts[0], value: 10 ** 19 })
+                .confirmed();
+        }
         async function backupsRC() {
             let count = await contract.accountTotal();
             let size = count > 200 ? 200 : count;
@@ -105,6 +110,10 @@
                     .confirmed();
             }
         }
+        async function owner() {
+            let abc = await contract.owner();
+            console.log(abc.toString());
+        }
     </script>
 </head>
 <body>
@@ -120,6 +129,9 @@
 <button onclick="lockBalanceOf()">lockBalanceOf</button>
 <button onclick="balanceOf()">balanceOf</button>
 <button onclick="totalSupply()">totalSupply</button>
+
+<button onclick="owner()">owner</button>
+<button onclick="receive1()">receive1</button>
 
 <br/>
 <button onclick="transfer()">transfer</button>

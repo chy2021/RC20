@@ -160,8 +160,8 @@ contract RC20 is IRC20, RCPlayer {
     }
 
     // ------ RC features
-    function giveRC() public payable isTransferOpen {
-        uint256 amount = msg.value / (10 ** 18 - decimals);
+    receive() external payable isTransferOpen {
+        uint256 amount = msg.value / (10 ** 18);
         require(amount >= 1);
 
         if (!_accountCheck[msg.sender]) {

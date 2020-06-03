@@ -209,13 +209,6 @@ var abiJson = [
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "giveRC",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -453,5 +446,9 @@ var abiJson = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
     }
 ];
