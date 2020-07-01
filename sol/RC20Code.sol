@@ -103,8 +103,7 @@ contract RC20 is IRC20, RCPlayer {
     mapping (address => uint256) private _lockBalances;
     mapping (address => mapping (address => uint256)) private _allowed;
 
-    uint256 private _totalSupply;
-    uint256 public cap;
+    uint256 internal _totalSupply;
 
     mapping (address => bool) private recoverys;
     mapping (address => bool) private _accountCheck;
@@ -115,7 +114,6 @@ contract RC20 is IRC20, RCPlayer {
         name = "RealCoin";
         symbol = "RC";
         decimals = 2;
-        cap = 100000000 * (10 ** decimals);
     }
 
     function totalSupply() public override view returns (uint256) {
@@ -217,7 +215,6 @@ contract RC20 is IRC20, RCPlayer {
 
     function _mint(address account, uint256 amount) internal {
         require(account != address(0));
-        require(cap >= _totalSupply + amount);
 
         _totalSupply = _totalSupply + amount;
         _balances[account] = _balances[account] + amount;
