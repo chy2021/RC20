@@ -1,10 +1,97 @@
 pragma solidity ^0.6.0;
 
-import "./IRC20.sol";
-import "./RCTransfer.sol";
-import "./RCPlayer.sol";
-import './RCRoles.sol';
+contract RCRoles {
+    address private _owner;
+    mapping(address => bool) private _admins;
 
+    constructor() public {
+        _owner = msg.sender;
+    }
+
+    function addAdmin(address admin) public onlyOwner {
+        _admins[admin] = true;
+    }
+    function removeAdmin(address admin) public onlyOwner {
+        _admins[admin] = false;
+    }
+    function owner() public view returns(address) {
+        return _owner;
+    }
+
+    modifier onlyAdmin() {
+        require(_admins[msg.sender] || msg.sender == _owner, "AdminRole: caller does not have the Admin role");
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "AdminRole: caller does not have the Admin role");
+        _;
+    }
+}
+
+contract RCPlayer is RCRoles {
+    bool private _transferSwitch;
+
+    constructor () public {
+        _transferSwitch = false;
+    }
+
+    function transferOpen() public onlyAdmin{
+        _transferSwitch = true;
+    }
+
+    function transferDown() public onlyAdmin {
+        _transferSwitch = false;
+    }
+
+    modifier isTransferOpen {
+        require(_transferSwitch, "Transfer down");
+        _;
+    }
+
+    modifier isTransferDown {
+        require(!_transferSwitch, "Transfer open");
+        _;
+    }
+
+}
+
+interface IRC20 {
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address who) external view returns (uint256);
+
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+
+    function registerContract() external;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+}
+
+abstract contract RCTransfer {
+    function transfer(address from, uint256 value) external virtual;
+
+    function transferFrom(address from, uint256 value) external virtual;
+
+    function approve(address from, uint256 value) external virtual;
+
+    function increaseAllowance(address from, uint256 addedValue) external virtual;
+
+    function decreaseAllowance(address from, uint256 subtractedValue) external virtual;
+
+    function registerRC(IRC20 tarAddress) public {
+        tarAddress.registerContract();
+    }
+}
 
 contract RC20 is IRC20, RCPlayer {
 
