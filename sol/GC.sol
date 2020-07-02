@@ -146,6 +146,20 @@ contract GC is RC20 {
         return down8strongStatus;
     }
 
+    struct StrongInfo {
+        uint256 strongNo;
+
+        address strongAccount;
+
+        string strongDesc;
+    }
+
+    StrongInfo[8] strongInfoList;
+
+    function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public {
+        strongInfoList[strongNo] ;
+    }
+
     struct DownChipInfo {
         address account;
         uint256 amount;
@@ -189,7 +203,7 @@ contract GC is RC20 {
     // 获取8强的冠军我押注的信息。
     function getSelfDown8strongChip(address self) public view returns(uint256[8] memory) {
         uint256[8] memory selfDown8strongAmount;
-        for (uint256 i = 0; i < 8; i++) {
+        for (uint256 i = 1; i <= 8; i++) {
             uint256 index = down8strongChipListMap[i].accountIndexMap[self];
             if (index == 0) {
                 selfDown8strongAmount[i] = 0;
