@@ -22,6 +22,34 @@ contract GC is RC20 {
 
     IRC20 _irc20;
 
+    bool downWinnerStatus;
+
+    bool down8strongStatus;
+
+    struct StrongInfo {
+        uint256 strongNo;
+        address strongAccount;
+        string strongDesc;
+    }
+
+    struct DownChipInfo {
+        address account;
+        uint256 amount;
+    }
+    struct DownChipList {
+        mapping(address => uint256) accountIndexMap;
+        DownChipInfo[] downChipInfoList;
+        uint256 totalDownChip;
+    }
+
+    mapping(uint256 => StrongInfo) strongInfoMap;
+
+    mapping(uint256 => DownChipList) down8strongChipListMap;
+
+    mapping(uint256 => DownChipList) downWinnerChipListMap;
+
+    uint256[2] duelTeams;
+
     constructor (IRC20 irc20) public {
         name = "GameCoin";
         symbol = "GC";
@@ -29,6 +57,7 @@ contract GC is RC20 {
         _irc20 = irc20;
     }
 
+    // ----------------- fc与gc的兑换相关 -----------------
 
     // 空投筹码，，，fc兑换gc
     function airdrop(address toAddress, uint amount, string memory transactionHash) public onlyAdmin {
@@ -117,69 +146,41 @@ contract GC is RC20 {
         return selfExchangeRecordMap[account];
     }
 
+    // ------------- 八强队伍信息相关 ---------------------
 
-    bool downWinnerStatus;
-    // 管理员设置开始下注对决盘
-    function startDownWinner() public onlyAdmin {
-        downWinnerStatus = true;
-    }
-    // 管理员设置停止下注对决盘
-    function stopDownWinner() public onlyAdmin {
-        downWinnerStatus = false;
-    }
-    // 获取对决盘下注状态 true可以下注
-    function getDownWinnerStatus() public view  returns(bool){
-        return downWinnerStatus;
+    // 设置八强信息
+    function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public onlyAdmin {
+        StrongInfo memory strongInfo = StrongInfo(strongNo, strongAccount, strongDesc);
+        strongInfoMap[strongNo] = strongInfo;
     }
 
-    bool down8strongStatus;
+    // 获取八强信息
+    function getStrongInfo(uint256 strongNo) public view returns (address strongAccount, string memory strongDesc) {
+        strongAccount = strongInfoMap[strongNo].strongAccount;
+        strongDesc = strongInfoMap[strongNo].strongDesc;
+    }
+
+    // ------------------ 八强下注盘 ---------------------
+
     // 管理员设置开始下注8强盘
     function startDown8strong() public onlyAdmin {
         down8strongStatus = true;
     }
+
     // 管理员设置停止下注8强盘
     function stopDown8strong() public onlyAdmin {
         down8strongStatus = false;
     }
+
     // 获取8强盘下注状态 true可以下注
     function getDown8strongStatus() public view  returns(bool){
         return down8strongStatus;
     }
 
-    struct StrongInfo {
-        uint256 strongNo;
-
-        address strongAccount;
-
-        string strongDesc;
-    }
-
-    StrongInfo[8] strongInfoList;
-
-    function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public {
-        strongInfoList[strongNo] ;
-    }
-
-    struct DownChipInfo {
-        address account;
-        uint256 amount;
-    }
-    struct DownChipList {
-        mapping(address => uint256) accountIndexMap;
-        DownChipInfo[] downChipInfoList;
-        uint256 totalDownChip;
-    }
-
-    mapping(uint256 => DownChipList) down8strongChipListMap;
-
-    mapping(uint256 => DownChipList) downWinnerChipListMap;
-
-    uint256[2] duelTeams;
-
     // 进行押注8强队伍胜利
     function down8strong(uint256 strongNo, uint256 amount) public {
         require(down8strongStatus, "8 strong no start");
-        require(strongNo >= 0 && strongNo < 8, "strongNo is fail");
+        require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
         require(amount < balanceOf(msg.sender), "amount is fail");
 
         DownChipList storage downChipList = down8strongChipListMap[strongNo];
@@ -214,6 +215,48 @@ contract GC is RC20 {
         return selfDown8strongAmount;
     }
 
+    // 获取八强队伍的总押注信息
+    function getTotal8strongShips() public view returns(uint256[8] memory) {
+        uint256[8] memory totalDownChips;
+        for (uint256 i = 1; i <= 8; i++) {
+            totalDownChips[i-1] = down8strongChipListMap[i].totalDownChip;
+        }
+        return totalDownChips;
+    }
+
+    // 八强盘开奖
+    function execute8strongDraw(uint256 strongNo) public {
+        require(!down8strongStatus, "8 strong no stop");
+        require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
+        uint256 totalDownChip;
+        for (uint256 i = 1; i <= 8; i++) {
+            if (i == strongNo) {
+                continue;
+            }
+            totalDownChip = totalDownChip + down8strongChipListMap[i].totalDownChip;
+        }
+        address owner = owner();
+
+        uint256 ownerAmount = totalDownChip * 0.2;
+//        uint256 championAmount =
+
+    }
+
+    // --------------- 对决下注盘 ----------------------------------
+
+    // 管理员设置开始下注对决盘
+    function startDownWinner() public onlyAdmin {
+        downWinnerStatus = true;
+    }
+    // 管理员设置停止下注对决盘
+    function stopDownWinner() public onlyAdmin {
+        downWinnerStatus = false;
+    }
+    // 获取对决盘下注状态 true可以下注
+    function getDownWinnerStatus() public view  returns(bool){
+        return downWinnerStatus;
+    }
+
     // 管理员进行设置对决的两只队伍
     function setDuelTeam(uint256 duelTeam1, uint256 duelTeam2) public onlyAdmin {
         duelTeams[0] = duelTeam1;
@@ -243,7 +286,7 @@ contract GC is RC20 {
 
     }
 
-    // 获取对决押注信息。
+    // 获取对决押注个人押注信息。
     function getSelfDownWinnerChip(address self) public view returns(uint256[2] memory, uint256[2] memory) {
         uint256[2] memory selfDownWinnerAmount;
         for (uint256 i1 = 0; i1 < 2; i1++) {
@@ -258,10 +301,14 @@ contract GC is RC20 {
         return (duelTeams, selfDownWinnerAmount);
     }
 
-    // 获取当前的对决队伍编号
-    function getCurrentDuelTeam() public view returns (uint256[2] memory) {
-        return duelTeams;
+    // 获取对决押注总奖池信息。
+    function getTotalDownWinnerChip() public view returns(uint256[2] memory, uint256[2] memory) {
+        uint256[2] memory totalDownChips;
+        for (uint256 i1 = 0; i1 < 2; i1++) {
+            uint i = duelTeams[i1];
+            totalDownChips[i] = downWinnerChipListMap[i].totalDownChip;
+        }
+        return (duelTeams, totalDownChips);
     }
-
 
 }
