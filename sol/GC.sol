@@ -122,7 +122,7 @@ contract GC is RCRoles {
         exchangeRecord.exchangeRecordType = 1;
 
         exchangeRecordFlow[exchangeRecordIdIndex] = exchangeRecord;
-        selfExchangeRecordMap[msg.sender].push(exchangeRecordIdIndex);
+        selfExchangeRecordMap[toAddress].push(exchangeRecordIdIndex);
 
         emit ExchangeRecordEvent(toAddress, amount, exchangeRecordIdIndex, 1);
     }
@@ -270,6 +270,10 @@ contract GC is RCRoles {
         return totalDownChips;
     }
 
+    function getTotalAmount() public view returns(uint256) {
+        return totalAmount;
+    }
+
     // 八强盘开奖
     function execute8strongDraw(uint256 strongNo) public onlyOwner {
         require(!down8strongStatus, "8 strong no stop");
@@ -292,12 +296,13 @@ contract GC is RCRoles {
         DownChipInfo[] memory downChipInfoList = down8strongChipListMap[strongNo].downChipInfoList;
 
         // 用户发出总金额
-        uint256 totalAmount;
+        uint256 totalAmountTemp;
         for (uint256 i = 0; i < downChipInfoList.length; i++) {
             address account = downChipInfoList[i].account;
             uint256 amount = downChipInfoList[i].amount;
-            amount = amount + (userTotalAmount * amount / currentTotalDownChip);
-            totalAmount = totalAmount + amount;
+            uint temp = userTotalAmount * amount / currentTotalDownChip;
+            amount = amount + temp;
+            totalAmountTemp = totalAmountTemp + temp;
             _mint(account, amount);
         }
 
@@ -308,7 +313,7 @@ contract GC is RCRoles {
         uint256 championAmount = totalDownChip / 10;
 
         // 开发者总金额
-        uint256 ownerAmount = totalDownChip - totalAmount - championAmount;
+        uint256 ownerAmount = totalDownChip - totalAmountTemp - championAmount;
 
         _mint(owner, ownerAmount);
         _mint(champion, championAmount);
@@ -388,7 +393,7 @@ contract GC is RCRoles {
     // 当日对决盘开奖
     function executeWinnerDraw(uint256 strongNo) public onlyOwner {
 
-        require(!downWinnerStatus, "8 strong no stop");
+        require(!downWinnerStatus, "winner no stop");
         require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
         require(!executeWinner, "It has been implemented");
         executeWinner = true;
@@ -409,14 +414,26 @@ contract GC is RCRoles {
         uint256 userTotalAmount = totalDownChip * 7 / 10;
 
         DownChipInfo[] memory downChipInfoList = downWinnerChipListMap[strongNo].downChipInfoList;
+        if (totalDownChip == 0) {
+
+            for (uint256 i = 0; i < downChipInfoList.length; i++) {
+                address account = downChipInfoList[i].account;
+                uint256 amount = downChipInfoList[i].amount;
+                _mint(account, amount);
+            }
+            _resetWinner();
+            return;
+
+        }
 
         // 用户发出总金额
-        uint256 totalAmount;
+        uint256 totalAmountTemp;
         for (uint256 i = 0; i < downChipInfoList.length; i++) {
             address account = downChipInfoList[i].account;
             uint256 amount = downChipInfoList[i].amount;
-            amount = amount + (userTotalAmount * amount / currentTotalDownChip);
-            totalAmount = totalAmount + amount;
+            uint temp = userTotalAmount * amount / currentTotalDownChip;
+            amount = amount + temp;
+            totalAmountTemp = totalAmountTemp + temp;
             _mint(account, amount);
         }
 
@@ -427,7 +444,7 @@ contract GC is RCRoles {
         uint256 championAmount = totalDownChip / 10;
 
         // 开发者总金额
-        uint256 ownerAmount = totalDownChip - totalAmount - championAmount;
+        uint256 ownerAmount = totalDownChip - totalAmountTemp - championAmount;
 
         _mint(owner, ownerAmount);
         _mint(champion, championAmount);
