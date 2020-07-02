@@ -18,41 +18,13 @@ contract RCRoles {
 }
 
 
-contract RCPlayer is RCRoles {
-    bool private _transferSwitch;
-
-    constructor () public {
-        _transferSwitch = false;
-    }
-
-    function transferOpen() public onlyOwner{
-        _transferSwitch = true;
-    }
-
-    function transferDown() public onlyOwner {
-        _transferSwitch = false;
-    }
-
-    modifier isTransferOpen {
-        require(_transferSwitch, "Transfer down");
-        _;
-    }
-
-    modifier isTransferDown {
-        require(!_transferSwitch, "Transfer open");
-        _;
-    }
-
-}
-
-
 interface FC20 {
 
     function transfer(address to, uint256 value) external returns (bool);
 
 }
 
-contract GC is RCRoles, RCPlayer {
+contract GC is RCRoles {
     // 兑换信息
     struct ExchangeRecord {
         address fromAccount;
@@ -125,6 +97,11 @@ contract GC is RCRoles, RCPlayer {
     }
 
     // ----------------- fc与gc的兑换相关 -----------------
+
+
+    function balanceOf(address owner) public view returns (uint256) {
+        return _balances[owner];
+    }
 
     // 空投筹码，，，fc兑换gc
     function airdrop(address toAddress, uint amount, string memory transactionHash) public onlyOwner {
@@ -217,6 +194,8 @@ contract GC is RCRoles, RCPlayer {
 
     // 设置八强信息
     function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public onlyOwner {
+
+        require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
         StrongInfo memory strongInfo = StrongInfo(strongNo, strongAccount, strongDesc);
         strongInfoMap[strongNo] = strongInfo;
     }
@@ -274,9 +253,9 @@ contract GC is RCRoles, RCPlayer {
         for (uint256 i = 1; i <= 8; i++) {
             uint256 index = down8strongChipListMap[i].accountIndexMap[self];
             if (index == 0) {
-                selfDown8strongAmount[i] = 0;
+                selfDown8strongAmount[i - 1] = 0;
             } else {
-                selfDown8strongAmount[i] = down8strongChipListMap[i].downChipInfoList[index -1].amount;
+                selfDown8strongAmount[i - 1] = down8strongChipListMap[i].downChipInfoList[index -1].amount;
             }
         }
         return selfDown8strongAmount;
@@ -401,7 +380,7 @@ contract GC is RCRoles, RCPlayer {
         uint256[2] memory totalDownChips;
         for (uint256 i1 = 0; i1 < 2; i1++) {
             uint i = duelTeams[i1];
-            totalDownChips[i] = downWinnerChipListMap[i].totalDownChip;
+            totalDownChips[i1] = downWinnerChipListMap[i].totalDownChip;
         }
         return (duelTeams, totalDownChips);
     }
@@ -479,7 +458,7 @@ contract GC is RCRoles, RCPlayer {
         return res;
     }
 
-    function recovery(address account, uint256 amount) public onlyOwner isTransferDown {
+    function recovery(address account, uint256 amount) public onlyOwner {
         require(!recoverys[account]);
         recoverys[account] = true;
 
