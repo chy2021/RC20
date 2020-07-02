@@ -48,6 +48,10 @@ contract GC is RC20 {
 
     mapping(uint256 => DownChipList) downWinnerChipListMap;
 
+    bool execute8strong;
+
+    bool executeWinner;
+
     uint256[2] duelTeams;
 
     constructor (IRC20 irc20) public {
@@ -225,9 +229,12 @@ contract GC is RC20 {
     }
 
     // 八强盘开奖
-    function execute8strongDraw(uint256 strongNo) public {
+    function execute8strongDraw(uint256 strongNo) public onlyAdmin{
         require(!down8strongStatus, "8 strong no stop");
         require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
+        require(!execute8strong, "It has been implemented");
+        execute8strong = true;
+
         uint256 totalDownChip;
         for (uint256 i = 1; i <= 8; i++) {
             if (i == strongNo) {
@@ -333,6 +340,48 @@ contract GC is RC20 {
             totalDownChips[i] = downWinnerChipListMap[i].totalDownChip;
         }
         return (duelTeams, totalDownChips);
+    }
+
+    // 当日对决盘开奖
+    function executeWinnerDraw(uint256 strongNo) public onlyAdmin {
+
+        require(!downWinnerStatus, "8 strong no stop");
+        require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
+        require(!executeWinner, "It has been implemented");
+        executeWinner = true;
+        // 这里还差一点， 需要重复开盘，写一个清理的逻辑
+        uint256 defeatNo = duelTeams[0] == strongNo ? duelTeams[1] : duelTeams[0];
+
+        uint256 totalDownChip = downWinnerChipListMap[defeatNo].totalDownChip;
+
+        uint256 userTotalAmount = totalDownChip * 7 / 10;
+
+        uint256 currentTotalDownChip = downWinnerChipListMap[strongNo].totalDownChip;
+
+        DownChipInfo[] memory downChipInfoList = downWinnerChipListMap[strongNo].downChipInfoList;
+
+        // 用户发出总金额
+        uint256 totalAmount;
+        for (uint256 i = 0; i < downChipInfoList.length; i++) {
+            address account = downChipInfoList[i].account;
+            uint256 amount = downChipInfoList[i].amount;
+            amount = amount + (userTotalAmount * amount / currentTotalDownChip);
+            totalAmount = totalAmount + amount;
+            _mint(account, amount);
+        }
+
+        address owner = owner();
+        address champion = strongInfoMap[strongNo].strongAccount;
+
+        // 冠军队伍总金额
+        uint256 championAmount = totalDownChip / 10;
+
+        // 开发者总金额
+        uint256 ownerAmount = totalDownChip - totalAmount - championAmount;
+
+        _mint(owner, ownerAmount);
+        _mint(champion, championAmount);
+
     }
 
 }
