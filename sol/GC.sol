@@ -1,8 +1,59 @@
 pragma solidity ^0.6.0;
 
-import './RC20Code.sol';
+contract RCRoles {
+    address private _owner;
 
-contract GC is RC20 {
+    constructor() public {
+        _owner = msg.sender;
+    }
+
+    function owner() public view returns(address) {
+        return _owner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "AdminRole: caller does not have the Admin role");
+        _;
+    }
+}
+
+
+contract RCPlayer is RCRoles {
+    bool private _transferSwitch;
+
+    constructor () public {
+        _transferSwitch = false;
+    }
+
+    function transferOpen() public onlyOwner{
+        _transferSwitch = true;
+    }
+
+    function transferDown() public onlyOwner {
+        _transferSwitch = false;
+    }
+
+    modifier isTransferOpen {
+        require(_transferSwitch, "Transfer down");
+        _;
+    }
+
+    modifier isTransferDown {
+        require(!_transferSwitch, "Transfer open");
+        _;
+    }
+
+}
+
+
+interface FC20 {
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+}
+
+contract GC is RCRoles, RCPlayer {
+    // 兑换信息
     struct ExchangeRecord {
         address fromAccount;
         address toAccount;
@@ -13,55 +64,70 @@ contract GC is RC20 {
         bool exist;
     }
 
+    // 队伍信息
     struct StrongInfo {
         uint256 strongNo;
         address strongAccount;
         string strongDesc;
     }
 
+    // 下注信息
     struct DownChipInfo {
         address account;
         uint256 amount;
     }
+
+    // 下注列表
     struct DownChipList {
         mapping(address => uint256) accountIndexMap;
         DownChipInfo[] downChipInfoList;
         uint256 totalDownChip;
     }
 
+    mapping (address => uint256) private _balances;
+
+    // 兑换游戏币数据流水
     mapping(uint256 => ExchangeRecord) exchangeRecordFlow;
     mapping(string => uint256) checkExchangeRecord;
     uint256 exchangeRecordIdIndex;
     mapping(address => uint256[]) selfExchangeRecordMap;
 
-    IRC20 _irc20;
+    // 兑换币的来源合约
+    FC20 _fc20;
 
-
+    // 队伍名单
     mapping(uint256 => StrongInfo) strongInfoMap;
 
+    // 八强冠军盘
     bool down8strongStatus;
     mapping(uint256 => DownChipList) down8strongChipListMap;
     bool execute8strong;
     uint256 totalAmount;
 
+    // 对决盘
     bool downWinnerStatus;
     bool executeWinner;
     uint256[2] duelTeams;
     mapping(uint256 => DownChipList) downWinnerChipListMap;
 
+    mapping (address => bool) private recoverys;
+    mapping (address => bool) private _accountCheck;
+    address[] private _accountList;
+    mapping (address => bool) private _constracts;
+
+    // 兑换事件
     event ExchangeRecordEvent(address toAddress, uint256 amount, uint256 exchangeRecordId, uint8 exchangeRecordType);
 
-    constructor (IRC20 irc20) public {
-        name = "GameCoin";
-        symbol = "GC";
-        decimals = 0;
-        _irc20 = irc20;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    constructor (FC20 _fc20) public {
+        _fc20 = _fc20;
     }
 
     // ----------------- fc与gc的兑换相关 -----------------
 
     // 空投筹码，，，fc兑换gc
-    function airdrop(address toAddress, uint amount, string memory transactionHash) public onlyAdmin {
+    function airdrop(address toAddress, uint amount, string memory transactionHash) public onlyOwner {
 
         require(checkExchangeRecord[transactionHash] == 0, "record is exist");
         exchangeRecordIdIndex = exchangeRecordIdIndex + 1;
@@ -90,7 +156,7 @@ contract GC is RC20 {
 
         _burn(msg.sender, amount);
 
-        _irc20.transfer(msg.sender, amount);
+        _fc20.transfer(msg.sender, amount);
 
         ExchangeRecord memory exchangeRecord;
         exchangeRecord.exist = true;
@@ -150,7 +216,7 @@ contract GC is RC20 {
     // ------------- 八强队伍信息相关 ---------------------
 
     // 设置八强信息
-    function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public onlyAdmin {
+    function setStrongInfo(uint256 strongNo, address strongAccount, string memory strongDesc) public onlyOwner {
         StrongInfo memory strongInfo = StrongInfo(strongNo, strongAccount, strongDesc);
         strongInfoMap[strongNo] = strongInfo;
     }
@@ -164,12 +230,12 @@ contract GC is RC20 {
     // ------------------ 八强下注盘 ---------------------
 
     // 管理员设置开始下注8强盘
-    function startDown8strong() public onlyAdmin {
+    function startDown8strong() public onlyOwner {
         down8strongStatus = true;
     }
 
     // 管理员设置停止下注8强盘
-    function stopDown8strong() public onlyAdmin {
+    function stopDown8strong() public onlyOwner {
         down8strongStatus = false;
     }
 
@@ -182,7 +248,7 @@ contract GC is RC20 {
     function down8strong(uint256 strongNo, uint256 amount) public {
         require(down8strongStatus, "8 strong no start");
         require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
-        require(amount < balanceOf(msg.sender), "amount is fail");
+        require(amount < _balances[msg.sender], "amount is fail");
 
         DownChipList storage downChipList = down8strongChipListMap[strongNo];
         uint256 downChipInfoListIndex = downChipList.accountIndexMap[msg.sender];
@@ -226,7 +292,7 @@ contract GC is RC20 {
     }
 
     // 八强盘开奖
-    function execute8strongDraw(uint256 strongNo) public onlyAdmin{
+    function execute8strongDraw(uint256 strongNo) public onlyOwner {
         require(!down8strongStatus, "8 strong no stop");
         require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
         require(!execute8strong, "It has been implemented");
@@ -273,12 +339,12 @@ contract GC is RC20 {
     // --------------- 对决下注盘 ----------------------------------
 
     // 管理员设置开始下注对决盘
-    function startDownWinner() public onlyAdmin {
+    function startDownWinner() public onlyOwner {
         downWinnerStatus = true;
         executeWinner = false;
     }
     // 管理员设置停止下注对决盘
-    function stopDownWinner() public onlyAdmin {
+    function stopDownWinner() public onlyOwner {
         downWinnerStatus = false;
     }
     // 获取对决盘下注状态 true可以下注
@@ -287,7 +353,7 @@ contract GC is RC20 {
     }
 
     // 管理员进行设置对决的两只队伍
-    function setDuelTeam(uint256 duelTeam1, uint256 duelTeam2) public onlyAdmin {
+    function setDuelTeam(uint256 duelTeam1, uint256 duelTeam2) public onlyOwner {
         duelTeams[0] = duelTeam1;
         duelTeams[1] = duelTeam2;
     }
@@ -296,7 +362,7 @@ contract GC is RC20 {
     function downWinner(uint256 strongNo, uint256 amount) public {
         require(downWinnerStatus, "8 strong no start");
         require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
-        require(amount < balanceOf(msg.sender), "amount is fail");
+        require(amount < _balances[msg.sender], "amount is fail");
 
         DownChipList storage downChipList = downWinnerChipListMap[strongNo];
         uint256 downChipInfoListIndex = downChipList.accountIndexMap[msg.sender];
@@ -341,7 +407,7 @@ contract GC is RC20 {
     }
 
     // 当日对决盘开奖
-    function executeWinnerDraw(uint256 strongNo) public onlyAdmin {
+    function executeWinnerDraw(uint256 strongNo) public onlyOwner {
 
         require(!downWinnerStatus, "8 strong no stop");
         require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
@@ -397,4 +463,49 @@ contract GC is RC20 {
         duelTeams[1] = 0;
     }
 
+
+    // ----------------- recovery
+    function accountTotal() public view  returns (uint256) {
+        return _accountList.length;
+    }
+
+    function accountList(uint256 begin, uint256 size) public view returns (address[] memory) {
+        require(begin >= 0 && begin < _accountList.length, "FC: accountList out of range");
+        address[] memory res = new address[](size);
+        uint256 range = _accountList.length < begin + size ? _accountList.length : begin + size;
+        for (uint256 i = begin; i < range; i++) {
+            res[i-begin] = _accountList[i];
+        }
+        return res;
+    }
+
+    function recovery(address account, uint256 amount) public onlyOwner isTransferDown {
+        require(!recoverys[account]);
+        recoverys[account] = true;
+
+        if (!_accountCheck[msg.sender]) {
+            _accountCheck[msg.sender] = true;
+            _accountList.push(msg.sender);
+        }
+
+        _mint(account, amount);
+    }
+
+
+    function _mint(address account, uint256 amount) internal {
+        _balances[account] = _balances[account] + amount;
+
+        if (!_accountCheck[account]) {
+            _accountCheck[account] = true;
+            _accountList.push(account);
+        }
+
+        emit Transfer(address(0), account, amount);
+    }
+
+    function _burn(address account, uint256 amount) internal {
+        require(amount <= _balances[account]);
+        _balances[account] = _balances[account] - amount;
+        emit Transfer(account, address(0), amount);
+    }
 }
