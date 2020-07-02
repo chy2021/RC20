@@ -13,19 +13,6 @@ contract GC is RC20 {
         bool exist;
     }
 
-    mapping(uint256 => ExchangeRecord) exchangeRecordFlow;
-    mapping(string => uint256) checkExchangeRecord;
-    uint256 exchangeRecordIdIndex;
-    mapping(address => uint256[]) selfExchangeRecordMap;
-
-    event ExchangeRecordEvent(address toAddress, uint256 amount, uint256 exchangeRecordId, uint8 exchangeRecordType);
-
-    IRC20 _irc20;
-
-    bool downWinnerStatus;
-
-    bool down8strongStatus;
-
     struct StrongInfo {
         uint256 strongNo;
         address strongAccount;
@@ -42,17 +29,27 @@ contract GC is RC20 {
         uint256 totalDownChip;
     }
 
+    mapping(uint256 => ExchangeRecord) exchangeRecordFlow;
+    mapping(string => uint256) checkExchangeRecord;
+    uint256 exchangeRecordIdIndex;
+    mapping(address => uint256[]) selfExchangeRecordMap;
+
+    IRC20 _irc20;
+
+
     mapping(uint256 => StrongInfo) strongInfoMap;
 
+    bool down8strongStatus;
     mapping(uint256 => DownChipList) down8strongChipListMap;
+    bool execute8strong;
+    uint256 totalAmount;
 
+    bool downWinnerStatus;
+    bool executeWinner;
+    uint256[2] duelTeams;
     mapping(uint256 => DownChipList) downWinnerChipListMap;
 
-    bool execute8strong;
-
-    bool executeWinner;
-
-    uint256[2] duelTeams;
+    event ExchangeRecordEvent(address toAddress, uint256 amount, uint256 exchangeRecordId, uint8 exchangeRecordType);
 
     constructor (IRC20 irc20) public {
         name = "GameCoin";
@@ -235,7 +232,7 @@ contract GC is RC20 {
         require(!execute8strong, "It has been implemented");
         execute8strong = true;
 
-        uint256 totalDownChip;
+        uint256 totalDownChip = totalAmount;
         for (uint256 i = 1; i <= 8; i++) {
             if (i == strongNo) {
                 continue;
@@ -278,6 +275,7 @@ contract GC is RC20 {
     // 管理员设置开始下注对决盘
     function startDownWinner() public onlyAdmin {
         downWinnerStatus = true;
+        executeWinner = false;
     }
     // 管理员设置停止下注对决盘
     function stopDownWinner() public onlyAdmin {
@@ -349,14 +347,21 @@ contract GC is RC20 {
         require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
         require(!executeWinner, "It has been implemented");
         executeWinner = true;
+
         // 这里还差一点， 需要重复开盘，写一个清理的逻辑
         uint256 defeatNo = duelTeams[0] == strongNo ? duelTeams[1] : duelTeams[0];
 
         uint256 totalDownChip = downWinnerChipListMap[defeatNo].totalDownChip;
 
-        uint256 userTotalAmount = totalDownChip * 7 / 10;
-
         uint256 currentTotalDownChip = downWinnerChipListMap[strongNo].totalDownChip;
+        if (currentTotalDownChip == 0) {
+            // 如果没有人下注胜利者，这里将筹码给到冠军总池中。
+            totalAmount = totalAmount + totalDownChip;
+            _resetWinner();
+            return;
+        }
+
+        uint256 userTotalAmount = totalDownChip * 7 / 10;
 
         DownChipInfo[] memory downChipInfoList = downWinnerChipListMap[strongNo].downChipInfoList;
 
@@ -381,7 +386,15 @@ contract GC is RC20 {
 
         _mint(owner, ownerAmount);
         _mint(champion, championAmount);
+        _resetWinner();
+    }
 
+
+    function _resetWinner() private {
+        delete downWinnerChipListMap[duelTeams[0]];
+        delete downWinnerChipListMap[duelTeams[1]];
+        duelTeams[0] = 0;
+        duelTeams[1] = 0;
     }
 
 }
