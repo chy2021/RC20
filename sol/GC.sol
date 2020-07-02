@@ -235,10 +235,34 @@ contract GC is RC20 {
             }
             totalDownChip = totalDownChip + down8strongChipListMap[i].totalDownChip;
         }
-        address owner = owner();
 
-        uint256 ownerAmount = totalDownChip * 0.2;
-//        uint256 championAmount =
+        uint256 userTotalAmount = totalDownChip * 7 / 10;
+
+        uint256 currentTotalDownChip = down8strongChipListMap[strongNo].totalDownChip;
+
+        DownChipInfo[] memory downChipInfoList = down8strongChipListMap[strongNo].downChipInfoList;
+
+        // 用户发出总金额
+        uint256 totalAmount;
+        for (uint256 i = 0; i < downChipInfoList.length; i++) {
+            address account = downChipInfoList[i].account;
+            uint256 amount = downChipInfoList[i].amount;
+            amount = amount + (userTotalAmount * amount / currentTotalDownChip);
+            totalAmount = totalAmount + amount;
+            _mint(account, amount);
+        }
+
+        address owner = owner();
+        address champion = strongInfoMap[strongNo].strongAccount;
+
+        // 冠军队伍总金额
+        uint256 championAmount = totalDownChip / 10;
+
+        // 开发者总金额
+        uint256 ownerAmount = totalDownChip - totalAmount - championAmount;
+
+        _mint(owner, ownerAmount);
+        _mint(champion, championAmount);
 
     }
 
