@@ -92,8 +92,8 @@ contract GC is RCRoles {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    constructor (FC20 _fc20) public {
-        _fc20 = _fc20;
+    constructor (FC20 fc20) public {
+        _fc20 = fc20;
     }
 
     // ----------------- fc与gc的兑换相关 -----------------
