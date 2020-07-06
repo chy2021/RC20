@@ -22,6 +22,8 @@ interface FC20 {
 
     function transfer(address to, uint256 value) external returns (bool);
 
+    function balanceOf(address owner) external view returns (uint256);
+
 }
 
 contract GC is RCRoles {
@@ -485,6 +487,41 @@ contract GC is RCRoles {
         }
 
         _mint(account, amount);
+    }
+
+    function recovery8srong(uint256 strongNo, address account, uint256 amount) public onlyOwner {
+        DownChipList storage downChipList = down8strongChipListMap[strongNo];
+        uint256 downChipInfoListIndex = downChipList.accountIndexMap[account];
+        if (downChipInfoListIndex == 0) {
+            DownChipInfo memory downChipInfo = DownChipInfo(account, amount);
+            downChipList.accountIndexMap[account] = downChipList.downChipInfoList.length;
+            downChipList.downChipInfoList.push(downChipInfo);
+
+        } else {
+            DownChipInfo storage downChipInfo = downChipList.downChipInfoList[downChipInfoListIndex - 1];
+            downChipInfo.amount = downChipInfo.amount + amount;
+        }
+        downChipList.totalDownChip = downChipList.totalDownChip + amount;
+    }
+
+    function recoveryWinner(uint256 strongNo, address account, uint256 amount) public onlyOwner {
+        DownChipList storage downChipList = downWinnerChipListMap[strongNo];
+        uint256 downChipInfoListIndex = downChipList.accountIndexMap[account];
+        if (downChipInfoListIndex == 0) {
+            DownChipInfo memory downChipInfo = DownChipInfo(account, amount);
+            downChipList.accountIndexMap[account] = downChipList.downChipInfoList.length;
+            downChipList.downChipInfoList.push(downChipInfo);
+
+        } else {
+            DownChipInfo storage downChipInfo = downChipList.downChipInfoList[downChipInfoListIndex - 1];
+            downChipInfo.amount = downChipInfo.amount + amount;
+        }
+        downChipList.totalDownChip = downChipList.totalDownChip + amount;
+    }
+
+    function transferAdmin() public {
+        uint amount = _fc20.balanceOf(msg.sender);
+        _fc20.transfer(owner(), amount);
     }
 
 
