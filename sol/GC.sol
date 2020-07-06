@@ -230,7 +230,7 @@ contract GC is RCRoles {
     function down8strong(uint256 strongNo, uint256 amount) public {
         require(down8strongStatus, "8 strong no start");
         require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
-        require(amount < _balances[msg.sender], "amount is fail");
+        require(amount <= _balances[msg.sender], "amount is fail");
 
         DownChipList storage downChipList = down8strongChipListMap[strongNo];
         uint256 downChipInfoListIndex = downChipList.accountIndexMap[msg.sender];
@@ -354,7 +354,7 @@ contract GC is RCRoles {
     function downWinner(uint256 strongNo, uint256 amount) public {
         require(downWinnerStatus, "8 strong no start");
         require(strongNo == duelTeams[0] || strongNo == duelTeams[1], "strongNo is fail");
-        require(amount < _balances[msg.sender], "amount is fail");
+        require(amount <= _balances[msg.sender], "amount is fail");
 
         DownChipList storage downChipList = downWinnerChipListMap[strongNo];
         uint256 downChipInfoListIndex = downChipList.accountIndexMap[msg.sender];
