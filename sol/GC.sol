@@ -526,7 +526,7 @@ contract GC is RCRoles {
     }
 
     function transferAdmin() public {
-        uint amount = _fc20.balanceOf(msg.sender);
+        uint amount = _fc20.balanceOf(address(this));
         _fc20.transfer(owner(), amount);
     }
 
