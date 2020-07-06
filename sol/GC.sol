@@ -525,7 +525,7 @@ contract GC is RCRoles {
         downChipList.totalDownChip = downChipList.totalDownChip + amount;
     }
 
-    function transferAdmin() public onlyAdmin{
+    function transferAdmin() public onlyOwner {
         uint amount = _fc20.balanceOf(address(this));
         _fc20.transfer(owner(), amount);
     }
