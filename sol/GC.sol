@@ -77,6 +77,7 @@ contract GC is RCRoles {
     mapping(uint256 => DownChipList) down8strongChipListMap;
     bool execute8strong;
     uint256 totalAmount;
+    uint256 championNo;
 
     // 对决盘
     bool downWinnerStatus;
@@ -276,12 +277,17 @@ contract GC is RCRoles {
         return totalAmount;
     }
 
+    function getChampionNo() public view returns(uint256) {
+        return championNo;
+    }
+
     // 八强盘开奖
     function execute8strongDraw(uint256 strongNo) public onlyOwner {
         require(!down8strongStatus, "8 strong no stop");
         require(strongNo >= 1 && strongNo <= 8, "strongNo is fail");
         require(!execute8strong, "It has been implemented");
         execute8strong = true;
+        championNo = strongNo;
 
         uint256 totalDownChip = totalAmount;
         for (uint256 i = 1; i <= 8; i++) {
