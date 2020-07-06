@@ -95,6 +95,10 @@ contract GC is RCRoles {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
+    string public name = "GameCoin";
+    string public symbol = "GC";
+    uint256 public decimals = 10 ** 18;
+
     constructor (FC20 fc20) public {
         _fc20 = fc20;
     }
